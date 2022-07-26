@@ -8,3 +8,10 @@ Feel free to use this code as you want but I have two requests:
 2. In case this code happend to be useful for you, feel free to mention it :^)
 
 Here is a step-by-step instruction of usage:
+1. Open pi0_phi.cc and change defolt path 
+2. Open parallel.sh and change defolt path there too
+3. Open Makefile.inc and change paths to yours (you need atleast PYTHIA and ROOT installed)
+4. In case you are not using parallel calculation you need compile pi0_phi.cc and new_funcs.cc. To do it write in command line "make pi0_phi" or "make new_funcs". Makefile will make file you writed and second one too but if the first file is up to date then Makefile will skip the second one. So be sure to make file that you changed last
+5. In case you are using parallel calculation just start bash script by putting in command line "./parallel.sh". Don't forget to make it executable before starting by "chmod u+x parallel.sh".
+
+

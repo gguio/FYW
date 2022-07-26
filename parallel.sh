@@ -1,7 +1,8 @@
 #!/bin/bash
 
 #compile before start
-make pi0_phi
+make pi0_ph
+make new_funcs
 
 #creating log dir if there is not yet
 DIR="/media/nikitix/Seagate_Expansion_Drive/diploma_output"
