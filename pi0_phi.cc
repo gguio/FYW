@@ -33,9 +33,9 @@ void initset (char* argv[], std::string settings[6]) {
 void initsetin (std::string settings[6]) {
 	std::string settings1[6] = {	"111",										//seed
 					"100000",									//number of events
-					"2",										//collision(0-dAu,1-pAu,2-CuAu,3-He3Au)
-					"8",										//particle code
-					"/media/nikitix/Seagate_Expansion_Drive/diploma_output/channels/",	 	//output path
+					"2",										//collision (0-dAu,1-pAu,2-CuAu,3-He3Au)
+					"8",										//parton distribution (check out PYTHIA documentation)
+					"/media/nikitix/Seagate_Expansion_Drive/diploma_output/",		 	//output path
 					"p"}; 										//target
 	for (int i=0; i<6; ++i) settings[i]=settings1[i];
 }
@@ -52,15 +52,16 @@ void print (int ** M) {
 
 
 int main(int argc, char* argv[]) {
-	//1.инициализация настроек
+	//1.initializing settings
 	std::string settings[6]; 
 	if (argc==7) {initset(argv, settings);} else {initsetin(settings);} 
 
-	//2.расчеты для протонов
+	//2.proton-proton beams calculations
+	hist3D_pp(settings);
 	int ** Mpp = centralities(settings);
 	print(Mpp);
 
-	//3.расчеты для систем
+	//3.ion-proton beams calculations
 	settings[5] = "Au";
 	settings[1] = "100000";
 	settings[2] = "0";
@@ -70,14 +71,15 @@ int main(int argc, char* argv[]) {
 	proj(settings, MAB);
 	std::cout << "AB projecties made" << std::endl;
 	
-	//4.расчет факторов
+	//4.nuclear modification factor calculation
 	rfactors(settings, MAB, Mpp);
 
 
-	//5.очистка памяти
+	//5.clearing allocated space
 	Free(Mpp); Free(MAB);
 
 	return 0;
 }
+
 
 

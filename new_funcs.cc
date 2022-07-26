@@ -24,23 +24,23 @@
 using namespace Pythia8;
 
 //******************************************************************************
-//hist3D создает и записывает 3D гистограммы нужных столкновений
-//для phi и pi0 отдельно. 
-//В тот же файл записывается гистограмма заряженных частиц.
+//hist3D creates and writes 3D histograms of the desired collisions 
+//for phi and pi0 separately. 
+//The histogram of charged particles is written to the same file.
 
 int hist3D (std::string argv[]) {
-	//1.инициализация пути
+	//1.path initializing
 	std::string path = argv[4];
 	vector<std::string> name{"dAu_pT_eta_", "pAu_pT_eta_", "CuAu_pT_eta_", "He3Au_pT_eta_"}; 
 	path.append(name[std::stoi(argv[2])]+argv[0]+"_pSet"+argv[3]+".root");
 	TFile* outFile = new TFile(path.c_str(), "RECREATE");
 
-	//2.гистограммы для записи 
+	//2.histograms for data 
 	TH3D *h3d_phi = new TH3D("h3d_phi", "hist for projections of phi", 500, 0, 500, 100, 0, 10, 100, -5, 5);
 	TH3D *h3d_pi0 = new TH3D("h3d_pi0", "hist for projections of pi0", 500, 0, 500, 100, 0, 10, 100, -5, 5);
 	TH1D *sumch = new TH1D("sumch", "Dist. of charged part.", 500, 0, 500);
 
-	//3.инициализация вариантов настроек для PYTHIA
+	//3.initializing different settings for PYTHIA
 	vector<std::string>proj{"1000010020", "2212", "1000290630", "1000020030"}; //{dAu, pAu, CuAu, 3HeAu}
 	vector<std::string>SigFitDefPar{"11.54,1.66,0.32,0.0,0.0,0.0,0.0,0.0",     //dAu
 					"11.54,1.66,0.32,0.0,0.0,0.0,0.0,0.0",     //pAu
@@ -54,7 +54,7 @@ int hist3D (std::string argv[]) {
 	random_seed_command.append(argv[0]);
 	std:: string pSet = "PDF:pSet = ";
 
-	//4.настройки PYTHIA
+	//4.settings for PYTHIA
 	Pythia pythia;
 	pythia.readString(beam1); 
 	pythia.readString("Beams:idB = 1000791970"); //Au
@@ -73,7 +73,7 @@ int hist3D (std::string argv[]) {
 	pythia.readString("HeavyIon:SigFitNGen = 20");
 	pythia.init();
 
-	//5.запуск событий
+	//5.triggering events
 	std::vector<TLorentzVector> phi, pi0;
 	TLorentzVector vphi, vpi0;
 	int sumcharge=0;
@@ -95,7 +95,7 @@ int hist3D (std::string argv[]) {
 		}
 	}
 
-	//6.запись в файл и очистка памяти
+	//6.writing data to the file and clearing allocated memory
 	h3d_phi->Write(); h3d_pi0->Write(); sumch->Write();
 	outFile->Close(); delete outFile;
 
@@ -104,15 +104,15 @@ int hist3D (std::string argv[]) {
 
 
 //******************************************************************************
-//centralities считывает гистограмму заряженных частиц, 
-//созданную функцией hist3D, и делает разбиновку
-//для центральностей 0-20%, 20-40%, 40-60%, 60-100%.
-//Также каждому бину сопостовляется число событий,
-//которое попало в эту центральность.
-//Например, 0-20%: bin=242, weight=1001
+//centralities reads the histogram of charged particles
+//created by the hist3D function and makes a breakdown 
+//for centralities 0-20%, 20-40%, 40-60%, 60-100%. 
+//Also, each bin is assigned the number of events 
+//that fell into this centrality. 
+//For example, 0-20%: bin=242, weight=1001
 
 int **centralities(std::string argv[]) {
-	//1.инициализация пути
+	//1.path initializing
 	std::string path = argv[4];
 	if (argv[5]=="Au") {
 		vector<std::string> name{"dAu_pT_eta_", "pAu_pT_eta_", "CuAu_pT_eta_", "He3Au_pT_eta_"}; 
@@ -122,10 +122,10 @@ int **centralities(std::string argv[]) {
 	} else {std::cout << "Write Au or p" << std::endl;}
 	TFile* inputFile = new TFile(path.c_str(), "READ");
 
-	//2.чтение гистограммы
+	//2.reading histogram of charged particles distribution
 	TH1D *hist_sum_ch = (TH1D*)inputFile->Get("sumch");
 
-	//3.инициализация необходимых переменных и массивов
+	//3.allocating memory for bins and weights array
 	double integral = hist_sum_ch->Integral(); std::cout << "integral = " << integral << std::endl;
 	int centrality[3] = {20, 40, 60};
 	int centrality_bins[3] = {0};
@@ -135,7 +135,7 @@ int **centralities(std::string argv[]) {
 		M[i] = new int [5];
 	}
 
-	//4.расчет центральностей и весов
+	//4.calculation of bins and weights
 	for (int i_bin = hist_sum_ch->GetNbinsX(); i_bin > 0; --i_bin) {
 		sum_content += hist_sum_ch->GetBinContent(i_bin); 
 		for (int j = 0; j < 3; ++j) {
@@ -150,17 +150,17 @@ int **centralities(std::string argv[]) {
 	}
 	M[0][4]=1; M[1][4]=M[1][0]-M[1][1]-M[1][2]-M[1][3];
 
-	//5.вывод бинов и весов для проверки
+	//5.printing bins and weight for check
 	for (int i=0; i<5; ++i) std::cout << "bin = " << M[0][i] << ", weight = " << M[1][i] << std::endl;
 
-	//6.закрытие потока и очистка памяти
+	//6.closing stream and clearing space
 	inputFile->Close(); delete inputFile;
 
 	return M;
 }
 
-//Вспомогательная функция 
-//очищения памяти от массива М.
+//Supporting function for clearing space 
+//after bins and weights array is not needed anymore.
 
 void Free( int ** M) {
     for ( size_t i = 0; i < 2; ++i ) {
@@ -171,8 +171,8 @@ void Free( int ** M) {
 
 
 //******************************************************************************
-//proj делает проекции 3D гистограммы из hist3D
-//по разбиновке из centralities.
+//proj makes projections of a 3D histogram 
+//from hist3D over a layout from centralities.
 
 int proj(std::string argv[], int ** M) {
 	//1.инициализация пути
@@ -220,9 +220,8 @@ int proj(std::string argv[], int ** M) {
 
 
 //******************************************************************************
-//hist3D_pp - то же, что и hist3D,
-//но для протонов.
-
+//hist3D_pp - same as hist3D 
+//but for protons beams.
 int hist3D_pp (std::string argv[]) {
 	//1.инициализация пути
 	std::string path = argv[4];
@@ -282,11 +281,9 @@ int hist3D_pp (std::string argv[]) {
 
 
 //******************************************************************************
-//rfactors строит распределения факторов 
-//ядерной модификации по поперечному импульсу
-//и псевдобыстроте.
-//Для расчета используется разбивка по
-//центральностям, сделанная в proj. 
+//rfactors plots distributions of nuclear modification factors 
+//over transverse momentum and pseudorapidity. 
+//The calculation uses the breakdown by centralities made in proj.
 
 int rfactors(std::string argv[], int ** MAB, int ** Mpp) {
 	//1.инициализация путей
@@ -345,20 +342,19 @@ int rfactors(std::string argv[], int ** MAB, int ** Mpp) {
 
 
 //******************************************************************************
-//
+//RMS calculates RMS using different parton distributions 
 //
 
 double **RMS (std::string argv[]) {
-	//1.инициализация путей к входным файлам
+	//1.path to input files
 	vector<std::string> path_AB{argv[4], argv[4], argv[4], argv[4]}; 	//std::string path_pp = argv[4];
 	vector<std::string> name{"dAu", "pAu", "CuAu", "He3Au"}; vector<std::string> sets{"8", "7", "10", "11"};
 	path_AB[0].append("Rfactors_"+name[0]+"_"+argv[0]+"_pSet"+argv[3]+".root");
 	for (int i=1; i<4; ++i) {path_AB[i].append("mistake/Rfactors_"+name[0]+"_"+argv[0]+"_pSet"+sets[i]+".root"); std::cout<<argv[2]<<std::endl;}
-	//path_pp.append("pp_pT_eta_"+argv[0]/*+"_pSet"+argv[3]*/+"_proj.root"); 
 	vector<TFile*> input_AB(4);
 	for (int i=0; i<4; ++i) input_AB[i] = new TFile(path_AB[i].c_str(), "READ"); //TFile* input_pp = new TFile(path_pp.c_str(), "READ");
 
-	//2.чтение гистограмм 
+	//2.histograms reading
 	vector<TH1D*> phi_AB(10), pi0_AB(10), tphi_AB(10), tpi0_AB(10);
 	vector<const char*> phi{"phi_pT_0_20", "phi_pT_20_40", "phi_pT_40_60", "phi_pT_60_100", "phi_pT_0_100", "phi_eta_0_20", "phi_eta_20_40", "phi_eta_40_60", "phi_eta_60_100", "phi_eta_0_100"};
 	vector<const char*> pi0{"pi0_pT_0_20", "pi0_pT_20_40", "pi0_pT_40_60", "pi0_pT_60_100", "pi0_pT_0_100", "pi0_eta_0_20", "pi0_eta_20_40", "pi0_eta_40_60", "pi0_eta_60_100", "pi0_eta_0_100"};
@@ -373,10 +369,10 @@ double **RMS (std::string argv[]) {
 		tpi0_AB[k+4] = (TH1D*) input_AB[k]->Get(pi0[9]); pi0_AB[k+4] = (TH1D*) tpi0_AB[k+4]->Clone(); pi0_AB[k+4]->SetDirectory(0);
 	}
 	
-	//3.промежуточная очистка памяти
+	//3.intermediate memory cleanup
 	for (int i=0; i<4; ++i) delete input_AB[i];
 
-	//4.расчет RMS
+	//4.RMS calculation
 	double ** rms = new double * [2];
 	for ( size_t i = 0; i < 2; ++i ) {
 		rms[i] = new double [40];
@@ -394,7 +390,7 @@ double **RMS (std::string argv[]) {
 		//if (isnan(rms[1][i+19])) rms[1][i+19] = 0.; if (isinf(rms[1][i+19])) rms[1][i+19] = 1.; if (rms[1][i+19]>1.) rms[1][i+19] = 1.;
 	}
 	
-	//5.вывод значений ошибки
+	//5.printing RMS 
 	std::cout << "pT" << "	" << "RMS for phi%" << "	" << "RMS for pi0%" << std::endl;	
 	for (int i=0; i<40; ++i) {
 		std::cout << (double)(i+1)/2 << "	&	" << round(rms[0][i]*1000)/1000 << "	&	" << round(rms[1][i]*1000)/1000 << "	\\\\" << std::endl;
@@ -402,6 +398,9 @@ double **RMS (std::string argv[]) {
 
 	return rms;
 }
+
+//Supporting function for memory cleanup
+//after RMS is not needed anymore
 
 void Free_rms( double ** rms) {
     for ( size_t i = 0; i < 2; ++i ) {
@@ -412,9 +411,10 @@ void Free_rms( double ** rms) {
 
 
 //******************************************************************************
-//hist3D создает и записывает 3D гистограммы нужных столкновений
-//для phi и pi0 отдельно. 
-//В тот же файл записывается гистограмма заряженных частиц.
+//hist3D_channels creates and writes 3D histograms of the desired collisions 
+//for phi and pi0 separately as hist3D but particles are picked by
+//decay channels, i.e. phi->K+K- and pi0->yy (check out Particle Data Group website). 
+//The histogram of charged particles is written to the same file.
 
 int hist3D_channels (std::string argv[]) {
 	//1.инициализация пути
@@ -517,8 +517,7 @@ int hist3D_channels (std::string argv[]) {
 
 
 //******************************************************************************
-//hist3D_pp - то же, что и hist3D,
-//но для протонов.
+//hist3D_pp_channels - same as hist3D_channels but for proton beams
 
 int hist3D_pp_channels (std::string argv[]) {
 	//1.инициализация пути
@@ -604,8 +603,8 @@ int hist3D_pp_channels (std::string argv[]) {
 
 
 //******************************************************************************
-//
-//
+//******************************************************************************
+//Functions below are not finished and are not working.
 
 void drawing (std::string argv[]) {
 	//1.инициализация путей
